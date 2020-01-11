@@ -67,7 +67,16 @@ def load_level(filename):    # загрузка уровней
 
 
 tile_images = {'wall': load_image('data/wall.png'), 'empty': load_image('data/path.png')}
-player_image = load_image('data/pacman.png')
+player_images = {('right', 0): load_image('data/pacman.png'),
+                 ('right', 1): load_image('data/pacman_closed.png'),
+                 ('left', 0): load_image('data/pacman_left.png'),
+                 ('left', 1): load_image('data/pacman_closed.png'),
+                 ('up', 0): load_image('data/pacman_up.png'),
+                 ('up', 1): load_image('data/pacman_closed.png'),
+                 ('down', 0): load_image('data/pacman_down.png'),
+                 ('down', 1): load_image('data/pacman_closed.png'),
+                 (None, 0): load_image('data/pacman.png'),
+                 (None, 1): load_image('data/pacman_closed.png')}
 
 tile_width = tile_height = 32
 
@@ -82,8 +91,25 @@ class Tile(pygame.sprite.Sprite):
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprites)
-        self.image = player_image
+        self.image = player_images[('right', 0)]
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        self.frame = 0
+        self.animtime = 0
+
+    def animate(self, direction):
+        self.animtime += clock.get_time()
+        if self.animtime >= 100:
+            self.animtime -= 100
+            self.frame = (self.frame + 1) % 2
+            self.image = player_images[(direction, self.frame)]
+        if direction == 'left':
+            player.rect.x -= 2
+        elif direction == 'right':
+            player.rect.x += 2
+        elif direction == 'up':
+            player.rect.y -= 2
+        elif direction == 'down':
+            player.rect.y += 2
 
 
 def generate_level(level):
@@ -98,7 +124,6 @@ def generate_level(level):
                 Tile('empty', x, y)
                 new_player = Player(x, y)
     return new_player, x, y
-
 
 
 start_screen()
@@ -119,14 +144,7 @@ while running:
                 direction = 'up'
             if event.key == pygame.K_DOWN:
                 direction = 'down'
-    if direction == 'left':
-        player.rect.x -= 2
-    elif direction == 'right':
-        player.rect.x += 2
-    elif direction == 'up':
-        player.rect.y -= 2
-    elif direction == 'down':
-        player.rect.y += 2
+    player.animate(direction)
     screen.fill(pygame.Color(0, 0, 0))
     tiles_group.draw(screen)
     player_group.draw(screen)
