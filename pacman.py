@@ -78,11 +78,21 @@ player_images = {('right', 0): load_image('data/pacman.png'),
                  (None, 0): load_image('data/pacman.png'),
                  (None, 1): load_image('data/pacman_closed.png')}
 
+up_borders = pygame.sprite.Group()
+down_borders = pygame.sprite.Group()
+left_borders = pygame.sprite.Group()
+right_borders = pygame.sprite.Group()
+
 tile_width = tile_height = 32
 
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
+        if tile_type == 'wall':
+            Border(tile_width * pos_x, tile_height * pos_y, tile_width * pos_x + 31, tile_height * pos_y, up_borders)
+            Border(tile_width * pos_x, tile_height * pos_y + 31, tile_width * pos_x + 31, tile_height * pos_y + 31, down_borders)
+            Border(tile_width * pos_x + 31, tile_height * pos_y, tile_width * pos_x + 31, tile_height * pos_y + 31, right_borders)
+            Border(tile_width * pos_x, tile_height * pos_y, tile_width * pos_x, tile_height * pos_y + 31, left_borders)
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
@@ -110,6 +120,20 @@ class Player(pygame.sprite.Sprite):
             player.rect.y -= 2
         elif direction == 'down':
             player.rect.y += 2
+
+
+class Border(pygame.sprite.Sprite):
+    # строго вертикальный или строго горизонтальный отрезок
+    def __init__(self, x1, y1, x2, y2, group):
+        super().__init__(all_sprites)
+        if x1 == x2:  # вертикальная стенка
+            self.add(group)
+            self.image = pygame.Surface([1, y2 - y1])
+            self.rect = pygame.Rect(x1, y1, 1, y2 - y1)
+        else:  # горизонтальная стенка
+            self.add(group)
+            self.image = pygame.Surface([x2 - x1, 1])
+            self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
 
 
 def generate_level(level):
