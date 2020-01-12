@@ -15,6 +15,12 @@ player = None
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
+points_group = pygame.sprite.Group()
+
+up_borders = pygame.sprite.Group()
+down_borders = pygame.sprite.Group()
+left_borders = pygame.sprite.Group()
+right_borders = pygame.sprite.Group()
 
 
 def load_image(name, color_key=None):    # загрузка всех изображений
@@ -78,11 +84,6 @@ player_images = {('right', 0): load_image('data/pacman.png'),
                  (None, 0): load_image('data/pacman.png'),
                  (None, 1): load_image('data/pacman_closed.png')}
 
-up_borders = pygame.sprite.Group()
-down_borders = pygame.sprite.Group()
-left_borders = pygame.sprite.Group()
-right_borders = pygame.sprite.Group()
-
 tile_width = tile_height = 32
 
 
@@ -130,6 +131,8 @@ class Player(pygame.sprite.Sprite):
             self.rect.y -= 2
         elif direction == 'down':
             self.rect.y += 2
+        if pygame.sprite.spritecollideany(self, points_group):
+            pygame.sprite.spritecollideany(self, points_group).kill()
 
 
 class Border(pygame.sprite.Sprite):
@@ -146,12 +149,21 @@ class Border(pygame.sprite.Sprite):
             self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
 
 
+class Point(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(points_group, all_sprites)
+        self.image = pygame.Surface((6, 6), pygame.SRCALPHA, 32)
+        pygame.draw.circle(self.image, pygame.Color("pink"), (3, 3), 3)
+        self.rect = pygame.Rect(tile_width * pos_x + 12, tile_height * pos_y + 12, 6, 6)
+
+
 def generate_level(level):
     new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
                 Tile('empty', x, y)
+                Point(x, y)
             elif level[y][x] == '#':
                 Tile('wall', x, y)
             elif level[y][x] == '@':
@@ -186,6 +198,7 @@ while running:
         player.move(direction)
     screen.fill(pygame.Color(0, 0, 0))
     tiles_group.draw(screen)
+    points_group.draw(screen)
     player_group.draw(screen)
     pygame.display.flip()
     clock.tick(60)
