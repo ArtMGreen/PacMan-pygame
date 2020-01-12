@@ -89,10 +89,10 @@ tile_width = tile_height = 32
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         if tile_type == 'wall':
-            Border(tile_width * pos_x, tile_height * pos_y, tile_width * pos_x + 31, tile_height * pos_y, up_borders)
-            Border(tile_width * pos_x, tile_height * pos_y + 31, tile_width * pos_x + 31, tile_height * pos_y + 31, down_borders)
-            Border(tile_width * pos_x + 31, tile_height * pos_y, tile_width * pos_x + 31, tile_height * pos_y + 31, right_borders)
-            Border(tile_width * pos_x, tile_height * pos_y, tile_width * pos_x, tile_height * pos_y + 31, left_borders)
+            Border(tile_width * pos_x, tile_height * pos_y - 1, tile_width * pos_x + 31, tile_height * pos_y - 1, up_borders)
+            Border(tile_width * pos_x, tile_height * pos_y + 32, tile_width * pos_x + 31, tile_height * pos_y + 32, down_borders)
+            Border(tile_width * pos_x + 32, tile_height * pos_y, tile_width * pos_x + 32, tile_height * pos_y + 31, right_borders)
+            Border(tile_width * pos_x - 1, tile_height * pos_y, tile_width * pos_x - 1, tile_height * pos_y + 31, left_borders)
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
@@ -112,14 +112,24 @@ class Player(pygame.sprite.Sprite):
             self.animtime -= 100
             self.frame = (self.frame + 1) % 2
             self.image = player_images[(direction, self.frame)]
+
+    def able_to_move(self, direction):
+        if (((pygame.sprite.spritecollideany(self, up_borders) and direction == 'down') or
+             (pygame.sprite.spritecollideany(self, down_borders) and direction == 'up') or
+             (pygame.sprite.spritecollideany(self, left_borders) and direction == 'right') or
+             (pygame.sprite.spritecollideany(self, right_borders) and direction == 'left'))):
+            return False
+        return True
+
+    def move(self, direction):
         if direction == 'left':
-            player.rect.x -= 2
+            self.rect.x -= 2
         elif direction == 'right':
-            player.rect.x += 2
+            self.rect.x += 2
         elif direction == 'up':
-            player.rect.y -= 2
+            self.rect.y -= 2
         elif direction == 'down':
-            player.rect.y += 2
+            self.rect.y += 2
 
 
 class Border(pygame.sprite.Sprite):
@@ -155,20 +165,25 @@ start_screen()
 player, level_x, level_y = generate_level(load_level('data/map.txt'))
 running = True
 direction = None
+next_direction = None
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                direction = 'left'
+                next_direction = 'left'
             if event.key == pygame.K_RIGHT:
-                direction = 'right'
+                next_direction = 'right'
             if event.key == pygame.K_UP:
-                direction = 'up'
+                next_direction = 'up'
             if event.key == pygame.K_DOWN:
-                direction = 'down'
+                next_direction = 'down'
+    if player.able_to_move(next_direction):
+        direction = next_direction
     player.animate(direction)
+    if player.able_to_move(direction):
+        player.move(direction)
     screen.fill(pygame.Color(0, 0, 0))
     tiles_group.draw(screen)
     player_group.draw(screen)
