@@ -1,5 +1,7 @@
 import sys
 import pygame
+from random import choice
+
 
 pygame.init()
 pygame.key.set_repeat(0, 70)
@@ -83,6 +85,10 @@ player_images = {('right', 0): load_image('data/pacman.png'),
                  ('down', 1): load_image('data/pacman_closed.png'),
                  (None, 0): load_image('data/pacman.png'),
                  (None, 1): load_image('data/pacman_closed.png')}
+ghost_images = {'grey': load_image('data/grey_monster.png'),
+                'pink': load_image('data/pink_monster.png'),
+                'red': load_image('data/red_monster.png'),
+                'blue': load_image('data/blue_monster.png')}
 
 tile_width = tile_height = 32
 
@@ -97,6 +103,48 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+
+
+class Ghost(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y, type):
+        super().__init__(player_group, all_sprites)
+        self.image = ghost_images[type]
+        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        self.direction = None
+
+    def able_to_move(self, direction):
+        if (((pygame.sprite.spritecollideany(self, up_borders) and direction == 'down') or
+             (pygame.sprite.spritecollideany(self, down_borders) and direction == 'up') or
+             (pygame.sprite.spritecollideany(self, left_borders) and direction == 'right') or
+             (pygame.sprite.spritecollideany(self, right_borders) and direction == 'left'))):
+            return False
+        return True
+
+    def move(self):
+        if self.direction == 'left':
+            self.rect.x -= 1
+        elif self.direction == 'right':
+            self.rect.x += 1
+        elif self.direction == 'up':
+            self.rect.y -= 1
+        elif self.direction == 'down':
+            self.rect.y += 1
+
+    def find_direction(self):
+        if self.rect.x < player.rect.x and self.able_to_move('right'):
+            self.direction = 'right'
+        if self.rect.x > player.rect.x and self.able_to_move('left'):
+            self.direction = 'left'
+        if self.rect.y < player.rect.y and self.able_to_move('down'):
+            self.direction = 'down'
+        if self.rect.y > player.rect.y and self.able_to_move('up'):
+            self.direction = 'up'
+        else:
+            directions = ['up', 'down', 'right', 'left']
+            for direction in directions:
+                if not self.able_to_move(direction):
+                    directions.remove(direction)
+            self.direction = choice(directions)
 
 
 class Player(pygame.sprite.Sprite):
@@ -158,7 +206,7 @@ class Point(pygame.sprite.Sprite):
 
 
 def generate_level(level):
-    new_player, x, y = None, None, None
+    new_player, x, y, ghosts = None, None, None, [None] * 4
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
@@ -169,12 +217,24 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('empty', x, y)
                 new_player = Player(x, y)
-    return new_player, x, y
+            elif level[y][x] == 'R':
+                Tile('empty', x, y)
+                red = Ghost(x, y, 'red')
+            elif level[y][x] == 'G':
+                Tile('empty', x, y)
+                grey = Ghost(x, y, 'grey')
+            elif level[y][x] == 'P':
+                Tile('empty', x, y)
+                pink = Ghost(x, y, 'pink')
+            elif level[y][x] == 'B':
+                Tile('empty', x, y)
+                blue = Ghost(x, y, 'blue')
+    return new_player, x, y, [red, grey, pink, blue]
 
 
 start_screen()
 
-player, level_x, level_y = generate_level(load_level('data/map.txt'))
+player, level_x, level_y, ghosts = generate_level(load_level('data/map.txt'))
 running = True
 direction = None
 next_direction = None
@@ -196,10 +256,16 @@ while running:
     player.animate(direction)
     if player.able_to_move(direction):
         player.move(direction)
+    for ghost in ghosts:
+        if not ghost.able_to_move(ghost.direction) or ghost.direction is None:
+            ghost.find_direction()
+        ghost.move()
     screen.fill(pygame.Color(0, 0, 0))
     tiles_group.draw(screen)
     points_group.draw(screen)
     player_group.draw(screen)
     pygame.display.flip()
+    if not bool(points_group):
+        break
     clock.tick(60)
 terminate()
