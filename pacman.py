@@ -9,6 +9,10 @@ pygame.key.set_repeat(0, 70)
 FPS = 60
 WIDTH = 1080
 HEIGHT = 720
+tile_width = tile_height = 32
+powerful_AI = False
+player_speed = 2
+ghost_speed = 1
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
@@ -17,6 +21,7 @@ player = None
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
+ghost_group = pygame.sprite.Group()
 points_group = pygame.sprite.Group()
 
 up_borders = pygame.sprite.Group()
@@ -90,8 +95,6 @@ ghost_images = {'grey': load_image('data/grey_monster.png'),
                 'red': load_image('data/red_monster.png'),
                 'blue': load_image('data/blue_monster.png')}
 
-tile_width = tile_height = 32
-
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
@@ -107,10 +110,12 @@ class Tile(pygame.sprite.Sprite):
 
 class Ghost(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, type):
-        super().__init__(player_group, all_sprites)
+        super().__init__(ghost_group, all_sprites)
         self.image = ghost_images[type]
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        self.mask = pygame.mask.from_surface(self.image)
         self.direction = None
+        self.AI_count = 0
 
     def able_to_move(self, direction):
         if (((pygame.sprite.spritecollideany(self, up_borders) and direction == 'down') or
@@ -122,22 +127,25 @@ class Ghost(pygame.sprite.Sprite):
 
     def move(self):
         if self.direction == 'left':
-            self.rect.x -= 1
-        elif self.direction == 'right':
-            self.rect.x += 1
-        elif self.direction == 'up':
-            self.rect.y -= 1
-        elif self.direction == 'down':
-            self.rect.y += 1
+            self.rect.x -= ghost_speed
+        if self.direction == 'right':
+            self.rect.x += ghost_speed
+        if self.direction == 'up':
+            self.rect.y -= ghost_speed
+        if self.direction == 'down':
+            self.rect.y += ghost_speed
+        if powerful_AI:
+            self.AI_count += ghost_speed
 
     def find_direction(self):
+        self.AI_count = 0
         if self.rect.x < player.rect.x and self.able_to_move('right'):
             self.direction = 'right'
-        if self.rect.x > player.rect.x and self.able_to_move('left'):
+        elif self.rect.x > player.rect.x and self.able_to_move('left'):
             self.direction = 'left'
-        if self.rect.y < player.rect.y and self.able_to_move('down'):
+        elif self.rect.y < player.rect.y and self.able_to_move('down'):
             self.direction = 'down'
-        if self.rect.y > player.rect.y and self.able_to_move('up'):
+        elif self.rect.y > player.rect.y and self.able_to_move('up'):
             self.direction = 'up'
         else:
             directions = ['up', 'down', 'right', 'left']
@@ -152,6 +160,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__(player_group, all_sprites)
         self.image = player_images[('right', 0)]
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        self.mask = pygame.mask.from_surface(self.image)
         self.frame = 0
         self.animtime = 0
 
@@ -172,13 +181,13 @@ class Player(pygame.sprite.Sprite):
 
     def move(self, direction):
         if direction == 'left':
-            self.rect.x -= 2
+            self.rect.x -= player_speed
         elif direction == 'right':
-            self.rect.x += 2
+            self.rect.x += player_speed
         elif direction == 'up':
-            self.rect.y -= 2
+            self.rect.y -= player_speed
         elif direction == 'down':
-            self.rect.y += 2
+            self.rect.y += player_speed
         if pygame.sprite.spritecollideany(self, points_group):
             pygame.sprite.spritecollideany(self, points_group).kill()
 
@@ -206,7 +215,7 @@ class Point(pygame.sprite.Sprite):
 
 
 def generate_level(level):
-    new_player, x, y, ghosts = None, None, None, [None] * 4
+    new_player, x, y, ghosts = None, None, None, []
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
@@ -220,16 +229,20 @@ def generate_level(level):
             elif level[y][x] == 'R':
                 Tile('empty', x, y)
                 red = Ghost(x, y, 'red')
+                ghosts.append(red)
             elif level[y][x] == 'G':
                 Tile('empty', x, y)
                 grey = Ghost(x, y, 'grey')
+                ghosts.append(grey)
             elif level[y][x] == 'P':
                 Tile('empty', x, y)
                 pink = Ghost(x, y, 'pink')
+                ghosts.append(pink)
             elif level[y][x] == 'B':
                 Tile('empty', x, y)
                 blue = Ghost(x, y, 'blue')
-    return new_player, x, y, [red, grey, pink, blue]
+                ghosts.append(blue)
+    return new_player, x, y, ghosts
 
 
 start_screen()
@@ -257,15 +270,21 @@ while running:
     if player.able_to_move(direction):
         player.move(direction)
     for ghost in ghosts:
-        if not ghost.able_to_move(ghost.direction) or ghost.direction is None:
+        if not ghost.able_to_move(ghost.direction) or ghost.direction is None or ghost.AI_count == 32:
             ghost.find_direction()
         ghost.move()
     screen.fill(pygame.Color(0, 0, 0))
     tiles_group.draw(screen)
     points_group.draw(screen)
     player_group.draw(screen)
+    ghost_group.draw(screen)
     pygame.display.flip()
     if not bool(points_group):
+        break
+    if ((pygame.sprite.collide_mask(player, ghosts[0]) or
+         pygame.sprite.collide_mask(player, ghosts[1]) or
+         pygame.sprite.collide_mask(player, ghosts[2]) or
+         pygame.sprite.collide_mask(player, ghosts[3]))):
         break
     clock.tick(60)
 terminate()
