@@ -10,12 +10,17 @@ FPS = 60
 WIDTH = 1080
 HEIGHT = 720
 tile_width = tile_height = 32
-powerful_AI = False
-player_speed = 2
-ghost_speed = 1
+powerful_AI = 0
+player_speed = 1
+ghost_speed = 0
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
+
+lobster_pacman = pygame.font.Font('data/lobster.ttf', 120)
+lobster_big = pygame.font.Font('data/lobster.ttf', 70)
+lobster_medium = pygame.font.Font('data/lobster.ttf', 50)
+lobster_small = pygame.font.Font('data/lobster.ttf', 30)
 
 player = None
 all_sprites = pygame.sprite.Group()
@@ -47,28 +52,142 @@ def terminate():
 
 
 def start_screen():    # начальный экран
-    intro_text = ["PACMAN"]
-    fon = pygame.transform.scale(load_image('data/fon.jpg'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 100)
-    text_coord = 100
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('white'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 100
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
-    # мини-цикл для начального экрана
     while True:
+        # Выводим изображение на экран
+        fon = pygame.transform.scale(load_image('data/fon.jpg'), (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        # Выводим "PACMAN" на экран
+        string = lobster_pacman.render('PACMAN', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 295, 70
+        screen.blit(string, rect_str)
+        # Выводим кнопку помощи на экран
+        string = lobster_big.render('Help', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 350, 350
+        screen.blit(string, rect_str)
+        # Выводим кнопку настроек на экран
+        string = lobster_big.render('Settings', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 500, 350
+        screen.blit(string, rect_str)
+        # Выводим кнопку старта игры на экран
+        string = lobster_big.render('Play', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 470, 450
+        screen.blit(string, rect_str)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                return  # начинаем игру
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if 475 >= event.pos[0] >= 350 and 435 >= event.pos[1] >= 350:
+                    help_screen()
+                elif 723 >= event.pos[0] >= 500 and 435 >= event.pos[1] >= 350:
+                    settings_screen()
+                elif 605 >= event.pos[0] >= 470 and 535 >= event.pos[1] >= 450:
+                    return    # начинаем игру
         pygame.display.flip()
-        clock.tick(FPS)
+
+
+def help_screen():
+    while True:
+        # Выводим изображение на экран
+        fon = pygame.transform.scale(load_image('data/fon.jpg'), (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        # Выводим информацию об управлении на экран
+        string = lobster_medium.render('Control is performed using arrow keys', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 70, 100
+        screen.blit(string, rect_str)
+        # Копирайтики, имя-фамилия и контакты :)
+        string = lobster_small.render('© Артем (ArtMGreen) Матевосян', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 70, 400
+        screen.blit(string, rect_str)
+        string = lobster_small.render('Official PacMan website: pacman.com', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 70, 450
+        screen.blit(string, rect_str)
+        string = lobster_small.render('github.com/ArtMGreen', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 70, 550
+        screen.blit(string, rect_str)
+        string = lobster_small.render('vk.com/artmgreen', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 70, 600
+        screen.blit(string, rect_str)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                return
+        pygame.display.flip()
+
+
+def settings_screen():
+    global powerful_AI, player_speed, ghost_speed
+    y_list = [100, 300, 500]
+    list_of_parameters = ["AI", "Player's speed", "Ghosts' speed"]
+    while True:
+        # Выводим изображение на экран
+        fon = pygame.transform.scale(load_image('data/fon.jpg'), (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        # Выводим названия настроек
+        for count in range(3):
+            string = lobster_big.render(list_of_parameters[count], 1, (0, 0, 0), (255, 255, 255))
+            rect_str = string.get_rect()
+            rect_str.x, rect_str.y = 70, y_list[count]
+            screen.blit(string, rect_str)
+        # Разнообразные перекдючатели настроек
+        if powerful_AI:
+            string = lobster_big.render('Smart', 1, (0, 0, 0), (255, 255, 255))
+            rect_str = string.get_rect()
+            rect_str.x, rect_str.y = 170, 100
+            screen.blit(string, rect_str)
+        else:
+            string = lobster_big.render('Original', 1, (0, 0, 0), (255, 255, 255))
+            rect_str = string.get_rect()
+            rect_str.x, rect_str.y = 170, 100
+            screen.blit(string, rect_str)
+        string = lobster_big.render(str(player_speed), 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 490, 300
+        screen.blit(string, rect_str)
+        string = lobster_big.render(str(ghost_speed), 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 460, 500
+        screen.blit(string, rect_str)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if 415 >= event.pos[0] >= 170 and 185 >= event.pos[1] >= 100:
+                    powerful_AI = (powerful_AI + 1) % 2
+                elif 528 >= event.pos[0] >= 490 and 385 >= event.pos[1] >= 300:
+                    player_speed = (player_speed + 1) % 3
+                elif 498 >= event.pos[0] >= 460 and 585 >= event.pos[1] >= 500:
+                    ghost_speed = (ghost_speed + 1) % 2
+                else:
+                    return
+        pygame.display.flip()
+
+
+def winning_screen():
+    while True:
+        # Выводим изображение на экран
+        fon = pygame.transform.scale(load_image('data/fon.jpg'), (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        # Выводим информацию об управлении на экран
+        string = lobster_pacman.render('You won!', 1, (0, 0, 0), (255, 255, 255))
+        rect_str = string.get_rect()
+        rect_str.x, rect_str.y = 300, 200
+        screen.blit(string, rect_str)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                return
+        pygame.display.flip()
 
 
 def load_level(filename):    # загрузка уровней
@@ -127,15 +246,15 @@ class Ghost(pygame.sprite.Sprite):
 
     def move(self):
         if self.direction == 'left':
-            self.rect.x -= ghost_speed
+            self.rect.x -= 2 ** ghost_speed
         if self.direction == 'right':
-            self.rect.x += ghost_speed
+            self.rect.x += 2 ** ghost_speed
         if self.direction == 'up':
-            self.rect.y -= ghost_speed
+            self.rect.y -= 2 ** ghost_speed
         if self.direction == 'down':
-            self.rect.y += ghost_speed
+            self.rect.y += 2 ** ghost_speed
         if powerful_AI:
-            self.AI_count += ghost_speed
+            self.AI_count += 2 ** ghost_speed
 
     def find_direction(self):
         self.AI_count = 0
@@ -149,10 +268,7 @@ class Ghost(pygame.sprite.Sprite):
             self.direction = 'up'
         else:
             directions = ['up', 'down', 'right', 'left']
-            for direction in directions:
-                if not self.able_to_move(direction):
-                    directions.remove(direction)
-            self.direction = choice(directions)
+            self.direction = choice([d for d in directions if self.able_to_move(d)])
 
 
 class Player(pygame.sprite.Sprite):
@@ -167,7 +283,7 @@ class Player(pygame.sprite.Sprite):
     def animate(self, direction):
         self.animtime += clock.get_time()
         if self.animtime >= 100:
-            self.animtime -= 100
+            self.animtime = 0
             self.frame = (self.frame + 1) % 2
             self.image = player_images[(direction, self.frame)]
 
@@ -181,13 +297,13 @@ class Player(pygame.sprite.Sprite):
 
     def move(self, direction):
         if direction == 'left':
-            self.rect.x -= player_speed
+            self.rect.x -= 2 ** player_speed
         elif direction == 'right':
-            self.rect.x += player_speed
+            self.rect.x += 2 ** player_speed
         elif direction == 'up':
-            self.rect.y -= player_speed
+            self.rect.y -= 2 ** player_speed
         elif direction == 'down':
-            self.rect.y += player_speed
+            self.rect.y += 2 ** player_speed
         if pygame.sprite.spritecollideany(self, points_group):
             pygame.sprite.spritecollideany(self, points_group).kill()
 
@@ -280,6 +396,7 @@ while running:
     ghost_group.draw(screen)
     pygame.display.flip()
     if not bool(points_group):
+        winning_screen()
         break
     if ((pygame.sprite.collide_mask(player, ghosts[0]) or
          pygame.sprite.collide_mask(player, ghosts[1]) or
